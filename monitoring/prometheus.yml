@@ -1,37 +1,44 @@
 global:
   scrape_interval: 15s
   evaluation_interval: 15s
+  scrape_timeout: 10s
 
 rule_files:
   - "alerts.yml"
 
 scrape_configs:
-  # Métriques de tes apps WorkOS sur différentes VMs
+  # Métriques de vos apps WorkOS sur différentes VMs
   - job_name: 'workos-api'
     static_configs:
       - targets: 
-          - 'VM2_IP:8000'  # App Server A
-          - 'VM3_IP:8000'  # App Server B
+          - '${APP_SERVER_A_IP}:8000'
+          - '${APP_SERVER_B_IP}:8000'
     metrics_path: '/metrics'
-    scrape_interval: 5s
+    scrape_interval: 10s
+    scrape_timeout: 5s
 
-  # Métriques système de chaque VM
+  # Métriques système de chaque VM via node-exporter
   - job_name: 'node-exporter'
     static_configs:
       - targets:
-          - 'VM1_IP:9100'  # Monitoring Server
-          - 'VM2_IP:9100'  # App Server A  
-          - 'VM3_IP:9100'  # App Server B
-    scrape_interval: 5s
+          - 'localhost:9100'
+          - '${APP_SERVER_A_IP}:9100'
+          - '${APP_SERVER_B_IP}:9100'
+        labels:
+          environment: 'production'
+          service: 'workos'
+    scrape_interval: 15s
+    scrape_timeout: 10s
 
-  # Auto-monitoring de Prometheus
+  # Auto-monitoring de Prometheus lui-même
   - job_name: 'prometheus'
     static_configs:
       - targets:
           - 'localhost:9090'
+    scrape_interval: 30s
 
 alerting:
   alertmanagers:
     - static_configs:
         - targets:
-          # - alertmanager:9093  # Si tu veux des alertes plus tard
+          # - 'localhost:9093'

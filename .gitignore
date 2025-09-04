@@ -42,3 +42,5 @@ terraform/.secrets/
 terraform.tfvars
 terraform/terraform.tfvars
 .terraform.lock.hcl
+.env
+monitoring/.env
