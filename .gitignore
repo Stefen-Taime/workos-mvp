@@ -40,3 +40,4 @@ terraform/.secrets/
 *.tfstate*
 .terraform/
 terraform.tfvars
+terraform/terraform.tfvars
