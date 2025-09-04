@@ -56,7 +56,7 @@ async def metrics_middleware(request: Request, call_next):
     return response
 
 # Endpoint pour Prometheus
-async def metrics_endpoint():
+async def metrics_endpoint(request: Request = None):
     return Response(generate_latest(), media_type="text/plain")
 
 # Fonction helper pour mettre à jour les métriques utilisateurs actifs

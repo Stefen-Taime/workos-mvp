@@ -55,7 +55,7 @@ resource "google_compute_firewall" "workos_firewall" {
 
   allow {
     protocol = "tcp"
-    ports = ["22", "80", "443", "8000", "3000", "9090", "9100"]
+    ports = ["22", "80", "443", "8000", "3000", "3001", "9090", "9100"]
   }
 
   source_ranges = ["0.0.0.0/0"]
