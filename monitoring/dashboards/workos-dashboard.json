@@ -1,0 +1,255 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "WorkOS MVP Monitoring",
+    "tags": ["workos", "api", "monitoring"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "API Requests per Second",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "rate(workos_requests_total[5m])",
+            "legendFormat": "Requests/sec"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"},
+            "custom": {"displayMode": "list", "orientation": "auto"},
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "green", "value": null},
+                {"color": "yellow", "value": 10},
+                {"color": "red", "value": 50}
+              ]
+            }
+          }
+        },
+        "options": {
+          "orientation": "auto",
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"],
+            "fields": ""
+          }
+        },
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}
+      },
+      {
+        "id": 2,
+        "title": "Response Time (95th percentile)",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, workos_request_duration_seconds)",
+            "legendFormat": "95th percentile"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "thresholds"},
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "green", "value": null},
+                {"color": "yellow", "value": 0.2},
+                {"color": "red", "value": 0.5}
+              ]
+            },
+            "unit": "s"
+          }
+        },
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}
+      },
+      {
+        "id": 3,
+        "title": "Requests by Tenant",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "rate(workos_requests_total[5m])",
+            "legendFormat": "{{tenant}}"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"},
+            "custom": {
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "drawStyle": "line",
+              "fillOpacity": 10,
+              "gradientMode": "none",
+              "hideFrom": {"legend": false, "tooltip": false, "vis": false},
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {"type": "linear"},
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {"group": "A", "mode": "none"},
+              "thresholdsStyle": {"mode": "off"}
+            }
+          }
+        },
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 8}
+      },
+      {
+        "id": 4,
+        "title": "HTTP Status Codes",
+        "type": "piechart",
+        "targets": [
+          {
+            "expr": "sum by (status_code) (rate(workos_requests_total[5m]))",
+            "legendFormat": "{{status_code}}"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"},
+            "custom": {
+              "hideFrom": {"legend": false, "tooltip": false, "vis": false}
+            },
+            "mappings": []
+          }
+        },
+        "options": {
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"],
+            "fields": ""
+          },
+          "pieType": "pie",
+          "tooltip": {"mode": "single"},
+          "legend": {"displayMode": "visible", "placement": "bottom"}
+        },
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16}
+      },
+      {
+        "id": 5,
+        "title": "Active Users by Tenant",
+        "type": "bargauge",
+        "targets": [
+          {
+            "expr": "workos_active_users",
+            "legendFormat": "{{tenant}}"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "continuous-GrYlRd"},
+            "custom": {
+              "displayMode": "basic",
+              "orientation": "horizontal"
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "green", "value": null},
+                {"color": "yellow", "value": 20},
+                {"color": "red", "value": 100}
+              ]
+            }
+          }
+        },
+        "options": {
+          "orientation": "horizontal",
+          "displayMode": "basic"
+        },
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16}
+      },
+      {
+        "id": 6,
+        "title": "System CPU Usage",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "100 - (avg(irate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)",
+            "legendFormat": "CPU Usage %"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"},
+            "custom": {
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "drawStyle": "line",
+              "fillOpacity": 10,
+              "gradientMode": "none",
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "showPoints": "never",
+              "spanNulls": false,
+              "thresholdsStyle": {"mode": "line"}
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "green", "value": null},
+                {"color": "yellow", "value": 70},
+                {"color": "red", "value": 90}
+              ]
+            },
+            "unit": "percent"
+          }
+        },
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 24}
+      },
+      {
+        "id": 7,
+        "title": "Memory Usage",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100",
+            "legendFormat": "Memory Usage %"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"},
+            "custom": {
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "drawStyle": "line",
+              "fillOpacity": 10,
+              "gradientMode": "none",
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "showPoints": "never",
+              "spanNulls": false,
+              "thresholdsStyle": {"mode": "line"}
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "green", "value": null},
+                {"color": "yellow", "value": 80},
+                {"color": "red", "value": 95}
+              ]
+            },
+            "unit": "percent"
+          }
+        },
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 24}
+      }
+    ],
+    "time": {"from": "now-1h", "to": "now"},
+    "refresh": "5s",
+    "schemaVersion": 27,
+    "version": 1
+  }
+}

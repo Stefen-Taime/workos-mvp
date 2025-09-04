@@ -5,7 +5,7 @@
 exec > >(tee -a /var/log/startup-script.log)
 exec 2>&1
 
-echo "Starting VM1 Load Balancer setup..."
+echo "Starting VM1 Load Balancer + Monitoring setup..."
 
 # Update system
 apt-get update
@@ -15,8 +15,10 @@ apt-get install -y nginx git curl
 curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
 apt-get install -y nodejs
 
-# Install Docker
+# Install Docker & Docker Compose
 curl -fsSL https://get.docker.com | sh
+curl -L "https://github.com/docker/compose/releases/download/v2.20.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+chmod +x /usr/local/bin/docker-compose
 
 # Clone the repository
 cd /home/ubuntu
@@ -37,6 +39,21 @@ server {
     listen 80;
     server_name _;
 
+    # Monitoring endpoints (Grafana & Prometheus)
+    location /grafana/ {
+        proxy_pass http://localhost:3000/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+
+    location /prometheus/ {
+        proxy_pass http://localhost:9090/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+
     # API routes for tenant group A
     location ~ ^/api/(demo|startup1|startup2)/ {
         proxy_pass http://app_servers_a;
@@ -55,7 +72,7 @@ server {
 
     # Frontend (ajouté plus tard)
     location / {
-        return 200 'WorkOS Load Balancer Running\n';
+        return 200 'WorkOS Load Balancer + Monitoring Running\n';
         add_header Content-Type text/plain;
     }
 }
@@ -65,7 +82,18 @@ EOF
 ln -s /etc/nginx/sites-available/workos /etc/nginx/sites-enabled/
 rm -f /etc/nginx/sites-enabled/default
 
+# Setup monitoring
+cd /home/ubuntu/workos-mvp/monitoring
+
+# Update prometheus.yml with real IPs
+sed -i "s/VM2_IP/${vm2_ip}/g" prometheus.yml
+sed -i "s/VM3_IP/${vm3_ip}/g" prometheus.yml
+sed -i "s/VM1_IP/$(hostname -I | awk '{print $1}')/g" prometheus.yml
+
+# Deploy monitoring
+./deploy-monitoring.sh
+
 # Restart nginx
 systemctl restart nginx
 
-echo "VM1 setup completed!"
+echo "VM1 setup completed with monitoring!"

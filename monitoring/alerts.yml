@@ -1,0 +1,68 @@
+groups:
+  - name: workos_alerts
+    rules:
+      # Performance alerts
+      - alert: HighResponseTime
+        expr: histogram_quantile(0.95, workos_request_duration_seconds) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "WorkOS API response time is high"
+          description: "95th percentile response time is {{ $value }}s (> 500ms)"
+
+      - alert: HighErrorRate
+        expr: rate(workos_requests_total{status_code=~"5.."}[5m]) > 0.1
+        for: 3m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is {{ $value }} errors/sec"
+
+      # Availability alerts
+      - alert: ServiceDown
+        expr: up{job="workos-api"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "WorkOS API is down"
+          description: "WorkOS API has been down for more than 2 minutes"
+
+      - alert: TenantNoActivity
+        expr: rate(workos_requests_total{tenant!="unknown"}[10m]) == 0
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "No activity from tenant {{ $labels.tenant }}"
+          description: "Tenant {{ $labels.tenant }} has no requests in 15 minutes"
+
+      # System resource alerts  
+      - alert: HighCPUUsage
+        expr: 100 - (avg(irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage detected"
+          description: "CPU usage is above 80% for 5 minutes"
+
+      - alert: HighMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage detected"
+          description: "Memory usage is above 85%"
+
+      - alert: DiskSpaceLow
+        expr: (1 - (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"})) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low disk space"
+          description: "Disk usage is above 85%"

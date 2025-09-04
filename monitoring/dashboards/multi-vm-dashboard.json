@@ -1,0 +1,271 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "WorkOS Multi-VM Infrastructure",
+    "tags": ["workos", "infrastructure", "multi-vm"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "VM Health Overview",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "up{job=\"node-exporter\"}",
+            "legendFormat": "{{instance}}"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "thresholds"},
+            "mappings": [
+              {"options": {"0": {"text": "DOWN"}}, "type": "value"},
+              {"options": {"1": {"text": "UP"}}, "type": "value"}
+            ],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "red", "value": null},
+                {"color": "green", "value": 1}
+              ]
+            }
+          }
+        },
+        "gridPos": {"h": 6, "w": 24, "x": 0, "y": 0}
+      },
+      {
+        "id": 2,
+        "title": "CPU Usage by VM",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "100 - (avg by (instance) (irate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)",
+            "legendFormat": "{{instance}}"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"},
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "fillOpacity": 10,
+              "gradientMode": "none",
+              "showPoints": "never",
+              "pointSize": 5,
+              "thresholdsStyle": {"mode": "line"}
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "green", "value": null},
+                {"color": "yellow", "value": 70},
+                {"color": "red", "value": 90}
+              ]
+            },
+            "unit": "percent",
+            "min": 0,
+            "max": 100
+          }
+        },
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 6}
+      },
+      {
+        "id": 3,
+        "title": "Memory Usage by VM",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100",
+            "legendFormat": "{{instance}}"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"},
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "fillOpacity": 10,
+              "showPoints": "never",
+              "thresholdsStyle": {"mode": "line"}
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "green", "value": null},
+                {"color": "yellow", "value": 80},
+                {"color": "red", "value": 95}
+              ]
+            },
+            "unit": "percent",
+            "min": 0,
+            "max": 100
+          }
+        },
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 6}
+      },
+      {
+        "id": 4,
+        "title": "Network Traffic by VM",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "rate(node_network_receive_bytes_total[5m])",
+            "legendFormat": "RX {{instance}}"
+          },
+          {
+            "expr": "rate(node_network_transmit_bytes_total[5m])",
+            "legendFormat": "TX {{instance}}"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"},
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "fillOpacity": 10,
+              "showPoints": "never"
+            },
+            "unit": "Bps"
+          }
+        },
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 14}
+      },
+      {
+        "id": 5,
+        "title": "Disk Usage by VM",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "(1 - (node_filesystem_avail_bytes{mountpoint=\"/\"} / node_filesystem_size_bytes{mountpoint=\"/\"})) * 100",
+            "legendFormat": "{{instance}}"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"},
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "fillOpacity": 10,
+              "showPoints": "never",
+              "thresholdsStyle": {"mode": "line"}
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "green", "value": null},
+                {"color": "yellow", "value": 80},
+                {"color": "red", "value": 95}
+              ]
+            },
+            "unit": "percent",
+            "min": 0,
+            "max": 100
+          }
+        },
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 14}
+      },
+      {
+        "id": 6,
+        "title": "Load Average by VM",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "node_load1",
+            "legendFormat": "1m {{instance}}"
+          },
+          {
+            "expr": "node_load5",
+            "legendFormat": "5m {{instance}}"
+          },
+          {
+            "expr": "node_load15",
+            "legendFormat": "15m {{instance}}"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"},
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "fillOpacity": 10,
+              "showPoints": "never"
+            }
+          }
+        },
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 22}
+      },
+      {
+        "id": 7,
+        "title": "Application Health by VM",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "up{job=\"workos-api\"}",
+            "legendFormat": "API {{instance}}"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "thresholds"},
+            "mappings": [
+              {"options": {"0": {"text": "DOWN"}}, "type": "value"},
+              {"options": {"1": {"text": "UP"}}, "type": "value"}
+            ],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "red", "value": null},
+                {"color": "green", "value": 1}
+              ]
+            }
+          }
+        },
+        "gridPos": {"h": 6, "w": 12, "x": 0, "y": 30}
+      },
+      {
+        "id": 8,
+        "title": "Response Time by VM",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(workos_request_duration_seconds_bucket[5m]))",
+            "legendFormat": "95th percentile {{instance}}"
+          },
+          {
+            "expr": "histogram_quantile(0.50, rate(workos_request_duration_seconds_bucket[5m]))",
+            "legendFormat": "50th percentile {{instance}}"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"},
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "fillOpacity": 10,
+              "showPoints": "never"
+            },
+            "unit": "s"
+          }
+        },
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 30}
+      }
+    ],
+    "time": {"from": "now-1h", "to": "now"},
+    "refresh": "10s",
+    "schemaVersion": 27,
+    "version": 1
+  }
+}

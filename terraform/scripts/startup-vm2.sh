@@ -1,5 +1,5 @@
 #!/bin/bash
-# terraform/scripts/startup-vm2.sh
+# terraform/scripts/startup-vm2.sh (et même chose pour vm3.sh)
 
 # Log pour debug
 exec > >(tee -a /var/log/startup-script.log)
@@ -37,4 +37,41 @@ docker run -d \
   --env-file .env \
   workos-backend
 
-echo "VM2 setup completed!"
+# Install Node Exporter for monitoring
+cd /tmp
+wget https://github.com/prometheus/node_exporter/releases/download/v1.6.1/node_exporter-1.6.1.linux-amd64.tar.gz
+tar xvf node_exporter-1.6.1.linux-amd64.tar.gz
+
+# Create monitoring user
+useradd --no-create-home --shell /bin/false node_exporter || true
+
+# Install Node Exporter
+cp node_exporter-1.6.1.linux-amd64/node_exporter /usr/local/bin/
+chown node_exporter:node_exporter /usr/local/bin/node_exporter
+
+# Create systemd service
+cat > /etc/systemd/system/node_exporter.service << 'EOF'
+[Unit]
+Description=Node Exporter
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+User=node_exporter
+Group=node_exporter
+Type=simple
+ExecStart=/usr/local/bin/node_exporter
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# Enable and start service
+systemctl daemon-reload
+systemctl enable node_exporter
+systemctl start node_exporter
+
+# Clean up
+rm -rf /tmp/node_exporter-*
+
+echo "VM2 setup completed with monitoring!"
