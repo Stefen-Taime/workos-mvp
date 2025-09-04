@@ -41,3 +41,4 @@ terraform/.secrets/
 .terraform/
 terraform.tfvars
 terraform/terraform.tfvars
+.terraform.lock.hcl
