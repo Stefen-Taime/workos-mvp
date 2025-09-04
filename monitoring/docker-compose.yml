@@ -4,6 +4,9 @@ services:
   prometheus:
     image: prom/prometheus:latest
     container_name: workos-prometheus
+    environment:
+      - APP_SERVER_A_IP=${APP_SERVER_A_IP}
+      - APP_SERVER_B_IP=${APP_SERVER_B_IP}
     ports:
       - "9090:9090"
     volumes:
