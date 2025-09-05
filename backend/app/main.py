@@ -1,10 +1,14 @@
-# backend/app/main.py
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import os
 
 from app.core.metrics import metrics_middleware, metrics_endpoint
 from app.modules.contacts.routes import router as contacts_router
+from app.modules.tasks.routes import router as tasks_router
+from app.modules.messages.routes import router as messages_router
+from app.modules.documents.routes import router as documents_router
+from app.modules.calendar.routes import router as calendar_router
+from app.modules.projects.routes import router as projects_router  # <-- Cette ligne
 
 app = FastAPI(title="WorkOS MVP")
 
@@ -17,11 +21,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Ajouter le middleware de métriques
+# Middleware de métriques
 app.middleware("http")(metrics_middleware)
 
-# Inclure les routes existantes
+# Inclure les routes
 app.include_router(contacts_router)
+app.include_router(tasks_router)
+app.include_router(messages_router)
+app.include_router(documents_router)
+app.include_router(calendar_router)
+app.include_router(projects_router)  # <-- Et cette ligne
 
 # Route pour Prometheus metrics
 app.add_route("/metrics", metrics_endpoint, methods=["GET"])
