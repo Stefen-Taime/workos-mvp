@@ -231,27 +231,25 @@ export default function TenantDashboard() {
 
   const fetchData = async () => {
     try {
-      const [contactsRes, tasksRes, channelsRes, documentsRes, foldersRes, eventsRes, statsRes, projectsRes, projectStatsRes] = await Promise.all([
+      // Fetch de base qui devrait toujours fonctionner
+      const [contactsRes, tasksRes, channelsRes, documentsRes, foldersRes, eventsRes, projectsRes] = await Promise.all([
         fetch(`${API_URL}/api/${tenant}/contacts`),
         fetch(`${API_URL}/api/${tenant}/tasks`),
         fetch(`${API_URL}/api/${tenant}/messages/channels`),
         fetch(`${API_URL}/api/${tenant}/documents`),
         fetch(`${API_URL}/api/${tenant}/folders`),
         fetch(`${API_URL}/api/${tenant}/events`),
-        fetch(`${API_URL}/api/${tenant}/events/stats`),
-        fetch(`${API_URL}/api/${tenant}/projects`),
-        fetch(`${API_URL}/api/${tenant}/projects/stats`)
+        fetch(`${API_URL}/api/${tenant}/projects`)
       ])
       
+      // Parse des données de base
       const contactsData = await contactsRes.json()
       const tasksData = await tasksRes.json()
       const channelsData = await channelsRes.json()
       const documentsData = await documentsRes.json()
       const foldersData = await foldersRes.json()
       const eventsData = await eventsRes.json()
-      const statsData = await statsRes.json()
       const projectsData = await projectsRes.json()
-      const projectStatsData = await projectStatsRes.json()
       
       setContacts(contactsData)
       setTasks(tasksData)
@@ -259,9 +257,70 @@ export default function TenantDashboard() {
       setDocuments(documentsData)
       setFolders(foldersData)
       setEvents(eventsData)
-      setCalendarStats(statsData)
       setProjects(projectsData)
-      setProjectStats(projectStatsData)
+      
+      // Fetch des stats séparément avec gestion d'erreur
+      try {
+        const eventsStatsRes = await fetch(`${API_URL}/api/${tenant}/events/stats`)
+        if (eventsStatsRes.ok) {
+          const statsData = await eventsStatsRes.json()
+          setCalendarStats(statsData)
+        } else {
+          console.log('Events stats endpoint not available')
+          // Calculer les stats manuellement si l'endpoint n'existe pas
+          const now = new Date()
+          const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay())
+          const weekEnd = new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000)
+          const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+          const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+          
+          setCalendarStats({
+            total_events: eventsData.length,
+            upcoming_events: eventsData.filter((e: Event) => new Date(e.start_time) > now).length,
+            events_this_week: eventsData.filter((e: Event) => {
+              const eventDate = new Date(e.start_time)
+              return eventDate >= weekStart && eventDate < weekEnd
+            }).length,
+            events_this_month: eventsData.filter((e: Event) => {
+              const eventDate = new Date(e.start_time)
+              return eventDate >= monthStart && eventDate <= monthEnd
+            }).length
+          })
+        }
+      } catch (error) {
+        console.log('Error fetching events stats:', error)
+      }
+      
+      // Fetch des stats projets séparément
+      try {
+        const projectStatsRes = await fetch(`${API_URL}/api/${tenant}/projects/stats`)
+        if (projectStatsRes.ok) {
+          const projectStatsData = await projectStatsRes.json()
+          setProjectStats(projectStatsData)
+        } else {
+          console.log('Projects stats endpoint not available')
+          // Calculer les stats manuellement si l'endpoint n'existe pas
+          const now = new Date()
+          setProjectStats({
+            total_projects: projectsData.length,
+            active_projects: projectsData.filter((p: Project) => p.status === 'active').length,
+            completed_projects: projectsData.filter((p: Project) => p.status === 'completed').length,
+            overdue_projects: projectsData.filter((p: Project) => 
+              p.deadline && new Date(p.deadline) < now && p.status !== 'completed'
+            ).length,
+            projects_by_status: projectsData.reduce((acc: any, p: Project) => {
+              acc[p.status] = (acc[p.status] || 0) + 1
+              return acc
+            }, {}),
+            projects_by_priority: projectsData.reduce((acc: any, p: Project) => {
+              acc[p.priority] = (acc[p.priority] || 0) + 1
+              return acc
+            }, {})
+          })
+        }
+      } catch (error) {
+        console.log('Error fetching projects stats:', error)
+      }
       
       // Charger les messages du channel actif
       if (channelsData.length > 0) {
@@ -501,14 +560,32 @@ export default function TenantDashboard() {
     setCreating(true)
     
     try {
+      if (contacts.length === 0) {
+        alert('Veuillez créer au moins un contact avant de créer un projet')
+        setCreating(false)
+        return
+      }
+      
+      const creatorId = contacts[0].id
+      
       const projectData = {
-        ...newProject,
-        created_by: contacts.length > 0 ? contacts[0].id : 1,
+        name: newProject.name,
+        description: newProject.description || null,
+        status: newProject.status,
+        priority: newProject.priority,
+        created_by: creatorId,
         client_id: newProject.client_id ? parseInt(newProject.client_id) : null,
         budget: newProject.budget ? parseFloat(newProject.budget) : null,
         estimated_hours: newProject.estimated_hours ? parseInt(newProject.estimated_hours) : null,
+        start_date: newProject.start_date || null,
+        end_date: newProject.end_date || null,
+        deadline: newProject.deadline || null,
+        color: newProject.color,
+        is_public: newProject.is_public,
         member_ids: newProject.member_ids
       }
+      
+      console.log('Creating project with data:', projectData)
       
       const res = await fetch(`${API_URL}/api/${tenant}/projects`, {
         method: 'POST',
@@ -516,28 +593,55 @@ export default function TenantDashboard() {
         body: JSON.stringify(projectData)
       })
       
-      if (res.ok) {
-        setNewProject({
-          name: '',
-          description: '',
-          status: 'planning',
-          priority: 'medium',
-          created_by: 0,
-          client_id: '',
-          budget: '',
-          estimated_hours: '',
-          start_date: '',
-          end_date: '',
-          deadline: '',
-          member_ids: [],
-          color: '#3B82F6',
-          is_public: false
-        })
-        setIsAddingProject(false)
-        await fetchData()
+      if (!res.ok) {
+        const error = await res.json()
+        console.error('Project creation error:', error)
+        let errorMessage = 'Erreur lors de la création du projet:\n'
+        
+        if (error.detail) {
+          if (Array.isArray(error.detail)) {
+            errorMessage += error.detail.map((err: any) => {
+              if (err.msg) {
+                return `- ${err.loc?.join(' > ') || 'Champ'}: ${err.msg}`
+              }
+              return `- ${JSON.stringify(err)}`
+            }).join('\n')
+          } else if (typeof error.detail === 'string') {
+            errorMessage += error.detail
+          } else {
+            errorMessage += JSON.stringify(error.detail)
+          }
+        } else {
+          errorMessage += 'Erreur inconnue'
+        }
+        
+        alert(errorMessage)
+        setCreating(false)
+        return
       }
+      
+      // Reset form
+      setNewProject({
+        name: '',
+        description: '',
+        status: 'planning',
+        priority: 'medium',
+        created_by: 0,
+        client_id: '',
+        budget: '',
+        estimated_hours: '',
+        start_date: '',
+        end_date: '',
+        deadline: '',
+        member_ids: [],
+        color: '#3B82F6',
+        is_public: false
+      })
+      setIsAddingProject(false)
+      await fetchData()
     } catch (error) {
       console.error('Error:', error)
+      alert('Une erreur est survenue lors de la création du projet')
     } finally {
       setCreating(false)
     }
